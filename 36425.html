@@ -1,0 +1,98 @@
+<!DOCTYPE html><html lang="zh-CN" data-default-color-scheme="&#34;auto&#34;"><head><meta charset="UTF-8"><link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png"><link rel="icon" type="image/png" href="/img/favicon.png"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,shrink-to-fit=no"><meta http-equiv="x-ua-compatible" content="ie=edge"><meta name="theme-color" content="#181c27"><meta name="description" content=""><meta name="author" content="nullptrX"><meta name="keywords" content=""><title>线程同步 - Coool Dev</title><link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/4.0.0/github-markdown.min.css"><link rel="stylesheet" href="/lib/hint/hint.min.css"><link rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.0/styles/github-gist.min.css"><link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_pf9vaxs7x7b.css"><link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css"><link rel="stylesheet" href="/css/main.css"><script src="/js/utils.js"></script><script src="/js/color-schema.js"></script><meta name="generator" content="Hexo 5.1.1"></head><body><header style="height:60vh"><nav id="navbar" class="navbar fixed-top navbar-expand-lg navbar-dark scrolling-navbar"><div class="container"><a class="navbar-brand" href="/">&nbsp;<strong>Coool Dev</strong>&nbsp;</a> <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><div class="animated-icon"><span></span><span></span><span></span></div></button><div class="collapse navbar-collapse" id="navbarSupportedContent"><ul class="navbar-nav ml-auto text-center"><li class="nav-item"><a class="nav-link" href="/"><i class="iconfont icon-home-fill"></i> 首页</a></li><li class="nav-item"><a class="nav-link" href="/categories/"><i class="iconfont icon-category-fill"></i> 分类</a></li><li class="nav-item"><a class="nav-link" href="/tags/"><i class="iconfont icon-tags-fill"></i> 标签</a></li><li class="nav-item"><a class="nav-link" href="/about/"><i class="iconfont icon-user-fill"></i> 关于</a></li><li class="nav-item" id="search-btn"><a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i class="iconfont icon-search"></i>&nbsp;</a></li><li class="nav-item" id="color-toggle-btn"><a class="nav-link" href="javascript:">&nbsp;<i class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a></li></ul></div></div></nav><div class="banner intro-2" id="background" parallax="true" style="background-image:linear-gradient(#111,#181c27);background-size:cover"><div class="full-bg-img"><div class="mask flex-center"><div class="container page-header text-center fade-in-up"><span class="h2" id="subtitle">线程同步</span><div class="mt-3"></div><div class="mt-1"></div></div></div></div></div></header><main><div class="container-fluid"><div class="row"><div class="d-none d-lg-block col-lg-2"></div><div class="col-lg-8 nopadding-md"><div class="container nopadding-md" id="board-ctn"><div class="py-5" id="board"><article class="post-content mx-auto" id="post"><h1 style="display:none">线程同步</h1><div class="markdown-body" id="post-body"><ul><li>synchronized</li></ul><p>自动加解锁保证方法内部或代码块内部资源同时最多只能有一个线程访问</p><ul><li>volatile</li></ul><p>使被标记属性具有原子性（不可拆分）</p><p>只对基本类型 (byte、char、short、int、long、float、double、 boolean) 的赋值操作和对象的引用赋值操作有效。</p><div class="hljs"><pre><code class="hljs kotlin">i++
+=&gt; (不具有原子性)
+<span class="hljs-keyword">val</span> temp = i + <span class="hljs-number">1</span>
+i = temp</code></pre></div><ul><li>AtomicInteger AtomicBoolean 等</li></ul><p>存在ABA问题（当前内存的值一开始是A，被另外一个线程先改为B然后再改为A，那么当前线程访问的时候发现是A，则认为它没有被其他线程访问过，对于链表来说，存在风险）</p><div class="hljs"><pre><code class="hljs kotlin"><span class="hljs-keyword">val</span> <span class="hljs-keyword">data</span> = AtomicInteger(<span class="hljs-number">0</span>)
+<span class="hljs-comment">// 通过比较内存中的值来判断是否改变，如果已经改变，则获取后重新比较，重复往返直至可以赋值</span>
+<span class="hljs-keyword">data</span>.incrementAndGet() <span class="hljs-comment">// ++i</span>
+<span class="hljs-keyword">data</span>.getAndIncrement() <span class="hljs-comment">// i++</span></code></pre></div><ul><li>AtomicStampedReference<t></t></li></ul><p>解决ABA问题（维护一个int类型的标记stamp，每次更新数据后更新stamp）,每次验证数据的差异时，也验证stamp是否改变。</p><div class="hljs"><pre><code class="hljs kotlin"><span class="hljs-keyword">val</span> <span class="hljs-keyword">data</span> = AtomicStampedReference&lt;<span class="hljs-built_in">Int</span>&gt;(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+<span class="hljs-keyword">var</span> stamp = <span class="hljs-keyword">data</span>.stamp
+<span class="hljs-keyword">data</span>.compareAndSet(<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, stamp, stamp + <span class="hljs-number">1</span>)
+stamp = <span class="hljs-keyword">data</span>.stamp
+<span class="hljs-keyword">data</span>.compareAndSet(<span class="hljs-number">2</span>, <span class="hljs-number">1</span>, stamp, stamp + <span class="hljs-number">1</span>)</code></pre></div><ul><li>Lock / ReentrantReadWriteLock</li></ul><p>手动锁，必须手动解锁。synchronized是自动加解锁</p><div class="hljs"><pre><code class="hljs kotlin"><span class="hljs-keyword">val</span> lock = ReentrantLock()
+
+lock.lock()
+<span class="hljs-keyword">try</span> &#123;
+
+&#125; <span class="hljs-keyword">finally</span> &#123;
+  lock.unlock()
+&#125;</code></pre></div><div class="hljs"><pre><code class="hljs kotlin"><span class="hljs-comment">// 主要用途</span>
+<span class="hljs-comment">// 读时都可读，写时不可读和写。</span>
+<span class="hljs-keyword">val</span> executors = Executors.newCachedThreadPool()
+<span class="hljs-keyword">val</span> lock = ReentrantReadWriteLock()
+
+<span class="hljs-keyword">val</span> readLock = lock.readLock()
+<span class="hljs-keyword">val</span> writeLock = lock.writeLock()
+
+<span class="hljs-keyword">val</span> readRunnable = Runnable &#123;
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0</span> until <span class="hljs-number">1000000</span>) &#123;
+    readLock.withLock &#123;
+      println(x)
+    &#125;
+  &#125;
+&#125;
+<span class="hljs-keyword">val</span> writeRunnable = Runnable &#123;
+  <span class="hljs-keyword">for</span> (i <span class="hljs-keyword">in</span> <span class="hljs-number">0</span> until <span class="hljs-number">1000000</span>) &#123;
+    writeLock.withLock &#123;
+      x++
+    &#125;
+  &#125;
+&#125;
+
+executors.execute(readRunnable)
+executors.execute(writeRunnable)
+executors.execute(readRunnable)
+executors.execute(writeRunnable)
+</code></pre></div><ul><li>死锁</li></ul><div class="hljs"><pre><code class="hljs kotlin"><span class="hljs-keyword">val</span> obj1 = Any()
+<span class="hljs-keyword">val</span> obj2 = Any()
+
+<span class="hljs-keyword">var</span> i1 = <span class="hljs-number">0</span>
+<span class="hljs-keyword">var</span> i2 = <span class="hljs-number">0</span>
+
+<span class="hljs-comment">// 两个锁被一起锁住</span>
+
+<span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">test1</span><span class="hljs-params">()</span></span> &#123;
+  synchronized(obj1) &#123;
+    i1 = <span class="hljs-number">0</span>
+    synchronized(obj2) &#123;
+      i2 = <span class="hljs-number">0</span>
+    &#125;
+  &#125;
+&#125;
+
+<span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">test2</span><span class="hljs-params">()</span></span> &#123;
+  synchronized(obj2) &#123;
+    i2 = <span class="hljs-number">0</span>
+    synchronized(obj1) &#123;
+      i1 = <span class="hljs-number">0</span>
+    &#125;
+  &#125;
+&#125;
+</code></pre></div><ul><li>锁范围(monitor)</li></ul><div class="hljs"><pre><code class="hljs kotlin"><span class="hljs-comment">// 作用于当前类</span>
+synchronized(X::<span class="hljs-class"><span class="hljs-keyword">class</span>) </span>&#123;
+  
+&#125;
+<span class="hljs-comment">// 作用于当前对象</span>
+synchronized(<span class="hljs-keyword">this</span>) &#123;
+  
+&#125;
+<span class="hljs-meta">@Synchronized</span>
+<span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">test</span><span class="hljs-params">()</span></span>: <span class="hljs-built_in">Unit</span> &#123;
+
+&#125;
+<span class="hljs-comment">// 作用于obj</span>
+<span class="hljs-keyword">val</span> obj = Any()
+synchronized(obj) &#123;
+  
+&#125;
+
+</code></pre></div></div><hr><div><div class="post-metas mb-3"><div class="post-meta mr-3"><i class="iconfont icon-category"></i> <a class="hover-with-bg" href="/categories/Android/">Android</a></div></div><p class="note note-warning">本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！</p><div class="post-prevnext row"><article class="post-prev col-6"><a href="/50840.html"><i class="iconfont icon-arrowleft"></i> <span class="hidden-mobile">HTTPS知识点</span> <span class="visible-mobile">上一篇</span></a></article><article class="post-next col-6"><a href="/52642.html"><span class="hidden-mobile">线程与进程</span> <span class="visible-mobile">下一篇</span> <i class="iconfont icon-arrowright"></i></a></article></div></div></article></div></div></div><div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn"><div id="toc"><p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p><div id="tocbot"></div></div></div></div></div></main><a id="scroll-top-button" href="#" role="button"><i class="iconfont icon-arrowup" aria-hidden="true"></i></a><div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable modal-lg" role="document"><div class="modal-content"><div class="modal-header text-center"><h4 class="modal-title w-100 font-weight-bold">搜索</h4><button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body mx-3"><div class="md-form mb-5"><input type="text" id="local-search-input" class="form-control validate"> <label data-error="x" data-success="v" for="local-search-input">关键词</label></div><div class="list-group" id="local-search-result"></div></div></div></div></div><footer class="mt-5"><div class="text-center py-3"><div>Copyright @ nullptrX 2020 <i class="iconfont icon-love"></i> Powered by Hexo</div></div></footer><script src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js"></script><script src="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/js/bootstrap.min.js"></script><script src="/js/debouncer.js"></script><script src="/js/main.js"></script><script src="/js/lazyload.js"></script><script defer src="https://cdn.staticfile.org/clipboard.js/2.0.6/clipboard.min.js"></script><script src="/js/clipboard-use.js"></script><script src="https://cdn.staticfile.org/tocbot/4.11.1/tocbot.min.js"></script><script>$(document).ready(function(){var t=$("#board-ctn").offset().top;tocbot.init({tocSelector:"#tocbot",contentSelector:"#post-body",headingSelector:"h1,h2,h3,h4,h5,h6",linkClass:"tocbot-link",activeLinkClass:"tocbot-active-link",listClass:"tocbot-list",isCollapsedClass:"tocbot-is-collapsed",collapsibleClass:"tocbot-is-collapsible",collapseDepth:6,scrollSmooth:!0,headingsOffset:-t}),0<$(".toc-list-item").length&&($("#toc").css("visibility","visible"),$(".toc-list-item").css("overflow","hidden").css("test-overflow","ellipsis").css("white-space","nowrap"))})</script><script src="https://cdn.staticfile.org/anchor-js/4.2.2/anchor.min.js"></script><script>anchors.options = {
+      placement: "right",
+      visible: "hover",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))</script><script src="/js/local-search.js"></script><script>var path="/local-search.xml",inputArea=document.querySelector("#local-search-input");inputArea.onclick=function(){searchFunc(path,"local-search-input","local-search-result"),this.onclick=null}</script><script src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js"></script><link rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css"><script>$("#post img:not(.no-zoom img, img[no-zoom]), img[zoom]").each(function(){var t=document.createElement("a");$(t).attr("data-fancybox","images"),$(t).attr("href",$(this).attr("src")),$(this).wrap(t)})</script></body></html>
